@@ -7,6 +7,8 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"strings"
 	"sync"
 	"unicode"
@@ -478,12 +480,28 @@ func parse(r io.Reader, pos int) (*Netrc, error) {
 // ParseFile opens the file at filename and then passes its io.Reader to
 // Parse().
 func ParseFile(filename string) (*Netrc, error) {
+	if filepath.Ext(filename) == ".gpg" {
+		return parseGPGFile(filename)
+	}
 	fd, err := os.Open(filename)
 	if err != nil {
 		return nil, err
 	}
 	defer fd.Close()
 	return Parse(fd)
+}
+
+func parseGPGFile(filename string) (*Netrc, error) {
+	cmd := exec.Command("gpg", "--batch", "--quiet", "--decrypt", filename)
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return nil, err
+	}
+	err = cmd.Start()
+	if err != nil {
+		return nil, err
+	}
+	return Parse(stdout)
 }
 
 // Parse parses from the the Reader r as a netrc file and returns the set of
