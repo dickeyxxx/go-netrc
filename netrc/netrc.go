@@ -361,6 +361,13 @@ func newToken(rawb []byte) (*token, error) {
 func scanValue(scanner *bufio.Scanner, pos int) ([]byte, string, int, error) {
 	if scanner.Scan() {
 		raw := scanner.Bytes()
+
+		// Future calls to scanner.Bytes() will overwrite the
+		// value of rawb, so make a copy before assigning
+		b := make([]byte, len(raw), len(raw))
+		copy(b, raw)
+		raw = b
+
 		pos += bytes.Count(raw, []byte{'\n'})
 		return raw, strings.TrimSpace(string(raw)), pos, nil
 	}
@@ -391,6 +398,13 @@ func parse(r io.Reader, pos int) (*Netrc, error) {
 			break
 		}
 		pos += bytes.Count(rawb, []byte{'\n'})
+
+		// Future calls to scanner.Bytes() will overwrite the
+		// value of rawb, so make a copy before assigning
+		b := make([]byte, len(rawb), len(rawb))
+		copy(b, rawb)
+		rawb = b
+
 		t, err = newToken(rawb)
 		if err != nil {
 			if currentMacro == nil {
