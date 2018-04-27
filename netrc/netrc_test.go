@@ -588,3 +588,20 @@ func TestLargeFile(t *testing.T) {
 		t.Log(string(body))
 	}
 }
+
+func TestMissingPassword(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("Expected a panic (.netrc is corrupt - github.com has a missing or invalid password token)")
+		}
+	}()
+
+	b := "machine github.com\n  login joeschmoe\n  \n"
+	nrc, err := Parse(strings.NewReader(b))
+	if err != nil {
+		t.Fatal(err)
+	}
+	m := nrc.FindMachine("github.com")
+	m.UpdateLogin("joeschmoe2")
+	m.UpdatePassword("TOKEN2")
+}

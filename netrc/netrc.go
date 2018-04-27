@@ -213,6 +213,9 @@ func (m *Machine) IsDefault() bool {
 // UpdatePassword sets the password for the Machine m.
 func (m *Machine) UpdatePassword(newpass string) {
 	m.Password = newpass
+	if m.passtoken == nil {
+		panic(fmt.Sprintf(".netrc is corrupt - %s has a missing or invalid password token", m.Name))
+	}
 	updateTokenValue(m.passtoken, newpass)
 }
 
