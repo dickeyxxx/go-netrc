@@ -567,3 +567,41 @@ func netrcReader(filename string, t *testing.T) io.Reader {
 	}
 	return bytes.NewReader(b)
 }
+
+func TestLargeFile(t *testing.T) {
+	b := ""
+	for i := 0; i < 50; i++ {
+		b += "machine github.com\n  login joeschmoe\n  password TOKEN\n"
+	}
+	b += "machine fail\n  login fail\n  password FAIL"
+
+	nrc, err := Parse(strings.NewReader(b))
+	if err != nil {
+		t.Fatal(err)
+	}
+	body, err := nrc.MarshalText()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(body) != b {
+		t.Errorf("Parsed netrc and marshalled netrc are not equal")
+		t.Log(string(body))
+	}
+}
+
+func TestMissingPassword(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("Expected a panic (.netrc is corrupt - github.com has a missing or invalid password token)")
+		}
+	}()
+
+	b := "machine github.com\n  login joeschmoe\n  \n"
+	nrc, err := Parse(strings.NewReader(b))
+	if err != nil {
+		t.Fatal(err)
+	}
+	m := nrc.FindMachine("github.com")
+	m.UpdateLogin("joeschmoe2")
+	m.UpdatePassword("TOKEN2")
+}
